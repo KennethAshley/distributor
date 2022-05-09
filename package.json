@@ -1,9 +1,11 @@
 {
-  "name": "distributor",
+  "name": "trading-competition-distributor-script",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "distribute": "node distribute",
+    "formatRanking": "node format-data",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,6 +18,7 @@
     "consola": "^2.15.3",
     "dotenv": "^16.0.0",
     "ethers": "^5.6.5",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "readline-sync": "^1.4.10"
   }
 }

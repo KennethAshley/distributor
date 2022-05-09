@@ -2,11 +2,25 @@ require('dotenv').config();
 
 const find = require('lodash/find');
 const consola = require('consola');
+const readlineSync = require('readline-sync');
 
 const { ERC20, REWARD_TOKENS, RANKINGS } = require('./constants');
 const { getConnex, calculateSplitRewards } = require('./utils');
 
-const distribute = async network => {
+const [network] = process.argv.slice(2);
+
+// ensure we have appropriate arguments
+if (!network) {
+  consola.error("Usage: node distribute [mainnet|testnet]");
+
+  process.exit(1);
+} else if (network ==='mainnet') {
+  const input = readlineSync.question("Confirm you want to execute this on the MAINNET? (y/n) ");
+
+  if (input != 'y') process.exit(1);
+}
+
+const distribute = async () => {
   const connex = await getConnex(network);
 
   const rankings = RANKINGS[network];
@@ -18,6 +32,7 @@ const distribute = async network => {
 
   for (const ranking of rankings) {
     const { VeUSD, Vex } = calculateSplitRewards(ranking.reward);
+    let receipt = null;
 
     consola.info('--------------------- Transfering ---------------------');
     consola.info(`Address: ${ranking.address}`);
@@ -31,11 +46,14 @@ const distribute = async network => {
     const { txid } = await connex.vendor.sign('tx', [transferVeUSD, transferVex]).request();
     consola.info(`Transaction: ${txid}`);
 
-    await connex.thor.ticker().next();
+    const transaction = await connex.thor.transaction(txid);
 
-    const transaction = await connex.thor.transaction(txid).getReceipt();
+    while (!receipt) {
+      await connex.thor.ticker().next();
+      receipt = await transaction.getReceipt();
+    }
 
-    if (transaction.reverted) {
+    if (receipt.reverted) {
       consola.warn('Transaction was reverted');
     } else {
       consola.success('Transaction was successful');
@@ -45,4 +63,4 @@ const distribute = async network => {
   process.exit(1);
 };
 
-distribute("testnet");
+distribute();
